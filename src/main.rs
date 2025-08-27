@@ -109,7 +109,26 @@ fn pad_and_rename_files(dir_path: &Path) -> io::Result<()> {
 
 fn generate_padded_name(file_name: &str) -> Option<String> {
     // Find the first dash
-    if let Some(dash_pos) = file_name.find('-') {
+    if let Some(dash_pos) = file_name.find(" -") {
+        let prefix = &file_name[..dash_pos];
+        let suffix = &file_name[dash_pos..]; // Include the dash and everything after
+
+        // Check if prefix is numeric (or can be treated as a number)
+        if let Ok(num) = prefix.parse::<u32>() {
+            // Pad with zeros to make it 3 characters
+            let padded_prefix = format!("{:03}", num);
+            Some(format!("{}{}", padded_prefix, suffix))
+        } else {
+            // If prefix is not numeric, pad it as a string to 3 characters with zeros
+            if prefix.len() <= 3 {
+                let padded_prefix = format!("{:0>3}", prefix);
+                Some(format!("{}{}", padded_prefix, suffix))
+            } else {
+                // If prefix is longer than 3 characters, don't modify
+                None
+            }
+        }
+    } else if let Some(dash_pos) = file_name.find('-') {
         let prefix = &file_name[..dash_pos];
         let suffix = &file_name[dash_pos..]; // Include the dash and everything after
 
@@ -181,6 +200,7 @@ fn main() -> io::Result<()> {
         Ok(()) => println!("Successfully moved all files!"),
         Err(e) => eprintln!("Error occurred: {}", e),
     }
+
     match pad_and_rename_files(&dest_directory) {
         Ok(()) => println!("Successfully renamed all files!"),
         Err(e) => eprintln!("Error occurred: {}", e),
